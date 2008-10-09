@@ -1,17 +1,19 @@
 # Copyright (c) 2001-2008, Aruba Networks, Inc.
 # This library is free software; you can redistribute it and/or modify it
 # under the same terms as Perl itself.
-package Test::Wiretap;
 
-use warnings;
 use strict;
+use warnings;
+package Test::Wiretap;
+use base qw(Exporter);
 
 use Carp;
 use Storable qw(dclone);
 use Class::Std;
 use Test::Resub;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
+our @EXPORT_OK = qw(wiretap);
 
 # Simple delegators: this way, we present a unified interface, instead of having
 # the caller write garbage like $wiretap->resub->args, $wiretap->resub->reset, etc.
@@ -32,6 +34,15 @@ my %capture :ATTR( :init_arg<capture>, :default(0) );
 my %return_values :ATTR;
 my %return_context :ATTR;
 my %deep_copy :ATTR( :init_arg<deep_copy>, :default(1) ); 
+
+sub wiretap {
+  my ($name, $code, %args) = @_;
+  return Test::Wiretap->new({
+    name => $name,
+    before => $code,
+    %args,
+  });
+}
 
 sub _my_resub {
   my ($self) = @_;
@@ -190,7 +201,17 @@ sub _split_package_method {
 
 =head1 CONSTRUCTOR
 
-my $tap = Test::Wiretap->new(\%args);
+   use Test::Wiretap qw(wiretap);
+   my $tap = wiretap 'package::method', sub { ... }, %args;
+
+is equivalent to:
+
+    use Test::Wiretap;
+    my $rs = Test::Wiretap->new({
+      name => 'package::method',
+      before => sub { ... },
+      %args,
+    });
 
 C<%args> can contain any of the following named arguments:
 
@@ -207,7 +228,7 @@ receives the same @_ as the tapped function does.
 
 =item B<after> (optional)
 
-A code reference that will run before the tapped function. This function
+A code reference that will run after the tapped function. This function
 receives three arguments: a reference to the tapped function's argument list,
 a reference to the tapped function's return-values list,
 and a third parameter indicating the context in which the tapped function was called.
@@ -301,7 +322,7 @@ Returns a list of lists of the return values from the tapped function. Examples:
 
 =head1 AUTHOR
 
-Airwave Wireless, C<< <cpan at airwave.com> >>
+AirWave Wireless, C<< <cpan at airwave.com> >>
 
 =head1 BUGS
 
@@ -347,7 +368,7 @@ L<http://search.cpan.org/dist/Test-Wiretap>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 Airwave Wireless, all rights reserved.
+Copyright 2008 AirWave Wireless, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
